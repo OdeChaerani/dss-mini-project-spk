@@ -9,7 +9,7 @@ st.set_page_config(page_title="SPK App", page_icon="🧮", layout="wide")
 st.title("🧠 Sistem Pendukung Keputusan (SPK)")
 st.caption("Metode: SAW, WP, AHP, TOPSIS — tanpa library perhitungan")
 
-# --- STEP 1: Jumlah kriteria dan alternatif ---
+# Jumlah kriteria dan alternatif
 st.header("1️⃣ Tentukan Jumlah Data")
 col1, col2 = st.columns(2)
 with col1:
@@ -20,7 +20,7 @@ with col2:
 # Jika jumlah sudah diisi
 if n_kriteria > 0 and n_alternatif > 0:
 
-    # --- STEP 2: Input nama & bobot kriteria ---
+    # Input nama & bobot kriteria
     st.header("2️⃣ Masukkan Data Kriteria")
     st.info("Isi nama, bobot, dan tipe (benefit/cost) untuk setiap kriteria")
 
@@ -35,14 +35,14 @@ if n_kriteria > 0 and n_alternatif > 0:
             tipe = st.selectbox(f"Tipe", ["benefit", "cost"], key=f"t{i}")
         kriteria_data.append({"nama": nama, "bobot": bobot, "tipe": tipe})
 
-    # --- STEP 3: Input nama alternatif ---
+    # Input nama alternatif
     st.header("3️⃣ Masukkan Nama Alternatif")
     alternatif_names = []
     for i in range(n_alternatif):
         nama = st.text_input(f"Nama Alternatif {i+1}", key=f"a{i}")
         alternatif_names.append(nama)
 
-    # --- STEP 4: Buat tabel nilai alternatif x kriteria ---
+    # tabel nilai alternatif x kriteria
     if all(k["nama"] for k in kriteria_data) and all(alternatif_names):
         st.header("4️⃣ Isi Nilai Setiap Alternatif untuk Setiap Kriteria")
 
@@ -52,7 +52,7 @@ if n_kriteria > 0 and n_alternatif > 0:
 
         edited_df = st.data_editor(df_input, use_container_width=True, num_rows="fixed")
 
-        # --- STEP 5: Pilih metode dan hitung ---
+        # Pilih metode dan hitung
         st.header("5️⃣ Pilih Metode dan Lihat Hasil")
         metode = st.selectbox("Pilih Metode SPK:", ["SAW", "WP", "AHP", "TOPSIS"])
 
