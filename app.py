@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 from methods.saw import hitung_saw
 from methods.wp import hitung_wp
 from methods.ahp import hitung_ahp
@@ -9,7 +8,7 @@ st.set_page_config(page_title="SPK App", page_icon="🧮", layout="wide")
 st.title("🧠 Sistem Pendukung Keputusan (SPK)")
 st.caption("Metode: SAW, WP, AHP, TOPSIS — tanpa library perhitungan")
 
-# Jumlah kriteria dan alternatif
+# --- STEP 1: Jumlah kriteria dan alternatif ---
 st.header("1️⃣ Tentukan Jumlah Data")
 col1, col2 = st.columns(2)
 with col1:
@@ -17,10 +16,9 @@ with col1:
 with col2:
     n_alternatif = st.number_input("Jumlah Alternatif", min_value=1, step=1)
 
-# Jika jumlah sudah diisi
 if n_kriteria > 0 and n_alternatif > 0:
 
-    # Input nama & bobot kriteria
+    # --- STEP 2: Data kriteria ---
     st.header("2️⃣ Masukkan Data Kriteria")
     st.info("Isi nama, bobot, dan tipe (benefit/cost) untuk setiap kriteria")
 
@@ -35,46 +33,59 @@ if n_kriteria > 0 and n_alternatif > 0:
             tipe = st.selectbox(f"Tipe", ["benefit", "cost"], key=f"t{i}")
         kriteria_data.append({"nama": nama, "bobot": bobot, "tipe": tipe})
 
-    # Input nama alternatif
+    # --- STEP 3: Data alternatif ---
     st.header("3️⃣ Masukkan Nama Alternatif")
     alternatif_names = []
     for i in range(n_alternatif):
         nama = st.text_input(f"Nama Alternatif {i+1}", key=f"a{i}")
         alternatif_names.append(nama)
 
-    # tabel nilai alternatif x kriteria
+    # --- STEP 4: Tabel nilai ---
     if all(k["nama"] for k in kriteria_data) and all(alternatif_names):
         st.header("4️⃣ Isi Nilai Setiap Alternatif untuk Setiap Kriteria")
 
         columns = [k["nama"] for k in kriteria_data]
-        empty_data = {col: [0 for _ in range(n_alternatif)] for col in columns}
-        df_input = pd.DataFrame(empty_data, index=alternatif_names)
+        data_awal = {col: [0 for _ in range(n_alternatif)] for col in columns}
 
-        edited_df = st.data_editor(df_input, use_container_width=True, num_rows="fixed")
+        # Gunakan data_editor untuk input tabel
+        edited_df = st.data_editor(data_awal, use_container_width=True, num_rows="fixed")
 
-        # Pilih metode dan hitung
+        # Konversi ke list of lists
+        matrix = []
+        for i in range(n_alternatif):
+            baris = []
+            for col in columns:
+                baris.append(float(edited_df[col][i]))
+            matrix.append(baris)
+
+        bobot = [k["bobot"] for k in kriteria_data]
+        tipe = [k["tipe"] for k in kriteria_data]
+        kriteria = [k["nama"] for k in kriteria_data]
+        alternatif = alternatif_names
+
+        # --- STEP 5: Pilih metode ---
         st.header("5️⃣ Pilih Metode dan Lihat Hasil")
         metode = st.selectbox("Pilih Metode SPK:", ["SAW", "WP", "AHP", "TOPSIS"])
 
         if st.button("Hitung Hasil"):
-            df_nilai = edited_df
-            bobot = [k["bobot"] for k in kriteria_data]
-            tipe = [k["tipe"] for k in kriteria_data]
-
             if metode == "SAW":
-                hasil = hitung_saw(df_nilai, bobot, tipe)
+                hasil, _, _ = hitung_saw(matrix, bobot, tipe, alternatif, kriteria)
             elif metode == "WP":
-                hasil = hitung_wp(df_nilai, bobot, tipe)
+                hasil, _ = hitung_wp(matrix, bobot, tipe, alternatif, kriteria)
             elif metode == "AHP":
-                hasil = hitung_ahp(df_nilai, bobot)
+                hasil = hitung_ahp(matrix, bobot)
             elif metode == "TOPSIS":
-                hasil = hitung_topsis(df_nilai, bobot, tipe)
+                hasil = hitung_topsis(matrix, bobot, tipe)
 
+            # Tampilkan hasil
             st.success(f"Hasil Perhitungan Menggunakan Metode {metode}")
-            st.dataframe(hasil.sort_values("Skor", ascending=False), use_container_width=True)
+            st.write("### 📊 Hasil Ranking:")
 
-            st.bar_chart(
-                hasil.set_index("Alternatif")["Skor"],
-                use_container_width=True,
-                height=300,
-            )
+            # Sortir hasil berdasarkan skor tertinggi
+            hasil_sorted = sorted(hasil, key=lambda x: x['Skor'] if 'Skor' in x else x['V'], reverse=True)
+
+            for i, h in enumerate(hasil_sorted, 1):
+                if 'Skor' in h:
+                    st.write(f"**{i}. {h['Alternatif']}** — Skor: {h['Skor']}")
+                elif 'V' in h:
+                    st.write(f"**{i}. {h['Alternatif']}** — V: {h['V']}")
